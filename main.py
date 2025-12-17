@@ -22,7 +22,7 @@ intents.members = True
 bot = commands.Bot(command_prefix='<',intents=intents)
 
 AdminRole = "goob"
-ticket_category_name = "Info"
+TicketCategory = 1450761135455207484
 VerifyName = "Member"
 WelcomeChannel = 1450708052369211392
 LogsChannel = 1450772719279935518
@@ -129,7 +129,10 @@ class Menu(discord.ui.View):
         user = interaction.user
         channel_name = f"{user.name}-channel"
         overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages=False),user: discord.PermissionOverwrite(read_messages=True, send_messages=True)}
-        category = discord.utils.get(guild.categories, name=ticket_category_name)
+        category = guild.get_channel(TicketCategory)
+        if category is None:
+            await interaction.response.send_message("Ticket category not found", ephemeral=True)
+            return
         existing = discord.utils.get(category.text_channels, name=channel_name)
         if existing:
             await interaction.response.send_message("You already have a ticket open.", ephemeral=True)
