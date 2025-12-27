@@ -7,7 +7,7 @@ import os
 import yt_dlp
 import asyncio
 
-from keep_alive import keep_alive
+#from keep_alive import keep_alive
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
@@ -21,7 +21,7 @@ def _extract(query, ydl_opts):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         return ydl.extract_info(query, download=False)
 
-keep_alive()
+#keep_alive()
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 #declare intents (permissions) for the bots to run
