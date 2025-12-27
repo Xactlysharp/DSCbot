@@ -51,6 +51,16 @@ current_song = {}
 async def on_ready():
     print(f"Bot is up and running!\nBot Name: {bot.user.name}")
 
+    #send verify message to fix
+    bot.add_view(Menu())
+    bot.add_view(menu2())
+    channel = bot.get_channel(VerifyChannel)
+    view = Menu()
+    async for msg in channel.history(limit=1):
+        await msg.delete()
+    embed = discord.Embed(title="Verification",description="Click the button below to open a ticket\n\nYou will get verified shortly after you open a ticket")
+    await channel.send(embed=embed, view=view)
+
 
 #testing commands
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
@@ -299,19 +309,6 @@ class Menu(discord.ui.View):
         await channel.send(f"{user.mention} This is your ticket. Please wait for an admin to verify you.")
 
     # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-
-
-#resend ticket message to one channel and keep channel clean
-@bot.event
-async def on_ready():
-    bot.add_view(Menu())
-    bot.add_view(menu2())
-    channel = bot.get_channel(VerifyChannel)
-    view = Menu()
-    await channel.purge(limit=1)
-    embed = discord.Embed(title="Verification",description="Click the button below to open a ticket\n\nYou will get verified shortly after you open a ticket")
-    await channel.send(embed=embed, view=view)
 
 #cleanup test
 @bot.command()
