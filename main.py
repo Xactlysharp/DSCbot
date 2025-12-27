@@ -1,4 +1,6 @@
 #imports
+import time
+
 import discord
 from discord.ext import commands
 import logging
@@ -43,6 +45,7 @@ RulesChannel = 1450710176922337340
 VerifyChannel = 1450766129831219232
 music_queues = {}
 current_song = {}
+last_search = {}
 playing_lock = set()
 
 
@@ -109,6 +112,11 @@ async def sendtorules_error(ctx):
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 @bot.command()
 async def play(ctx, *, song_query: str):
+    now = time.time()
+    if ctx.guild.id in last_search and now - last_search[ctx.guild.id] < 5:
+        await ctx.send(f"GET RATE LIMITED LMAO")
+        return
+    last_search[ctx.guild.id] = now
 
     # join a vc
     if ctx.author.voice is None:
@@ -129,8 +137,13 @@ async def play(ctx, *, song_query: str):
     ydl_options = {
         "format": "bestaudio[abr<=96]/bestaudio",
         "noplaylist": True,
+        "quiet": True,
+        "cookiefile": "cookies.txt",
         "youtube_include_dash_manifest": False,
         "youtube_include_hls_manifest": False,
+        "https_headers": {
+            "User_Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        }
     }
 
     #search for the audio
