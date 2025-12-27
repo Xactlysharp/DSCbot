@@ -32,6 +32,8 @@ intents.members = True
 
 bot = commands.Bot(command_prefix='<',intents=intents)
 
+bot.started = False
+
 AdminRole = "goob"
 TicketCategory = 1451100798531539005
 VerifyName = "Member"
@@ -41,6 +43,7 @@ RulesChannel = 1450710176922337340
 VerifyChannel = 1450766129831219232
 music_queues = {}
 current_song = {}
+playing_lock = set()
 
 
 
@@ -49,6 +52,9 @@ current_song = {}
 #define an event on bot ready
 @bot.event
 async def on_ready():
+    if bot.started:
+        return
+    bot.started = True
     print(f"Bot is up and running!\nBot Name: {bot.user.name}")
 
     #send verify message to fix
@@ -146,7 +152,6 @@ async def play(ctx, *, song_query: str):
     queue.append((audio_url, title))
 
     if was_empty:
-        await ctx.send(f"Now playing **{title}**")
         play_next(ctx)
     else:
         await ctx.send(f"Queued: **{title}**")
@@ -158,10 +163,16 @@ async def play(ctx, *, song_query: str):
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 #play next
 def play_next(ctx):
+    if ctx.guild.id in playing_lock:
+        return
+
+    playing_lock.add(ctx.guild.id)
+
     queue = music_queues.get(ctx.guild.id)
 
     if not queue or len(queue) == 0:
         current_song[ctx.guild.id] = None
+        playing_lock.discard(ctx.guild.id)
         return
 
     voice_client = ctx.voice_client
@@ -180,10 +191,15 @@ def play_next(ctx):
         executable="bin\\ffmpeg\\ffmpeg.exe"
     )
 
+    coro = ctx.send(f"Now Playing **{title}**")
+    asyncio.run_coroutine_threadsafe(coro, bot.loop)
+
     voice_client.play(
         source,
         after=lambda e: bot.loop.call_soon_threadsafe(play_next, ctx)
     )
+
+    playing_lock.discard(ctx.guild.id)
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 @bot.command()
 async def pause(ctx):
