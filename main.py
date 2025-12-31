@@ -134,7 +134,7 @@ async def play(ctx, *, song_query: str):
 
 
     ydl_options = {
-        "format": "bestaudio[abr<=96]/bestaudio",
+        "format": "bestaudio/best",
         "noplaylist": True,
         "extract_flat": False,
         "jsruntimes": "node",
@@ -143,7 +143,7 @@ async def play(ctx, *, song_query: str):
         "youtube_include_dash_manifest": False,
         "youtube_include_hls_manifest": False,
         "https_headers": {
-            "User_Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         }
     }
 
