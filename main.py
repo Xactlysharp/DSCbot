@@ -6,22 +6,13 @@ from discord.ext import commands
 import logging
 from dotenv import load_dotenv
 import os
-import yt_dlp
+#import yt_dlp
 import asyncio
 
 #from keep_alive import keep_alive
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
-
-#music bot commands
-async def search_ytdlp_async(query, ydl_opts):
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, lambda: _extract(query, ydl_opts))
-
-def _extract(query, ydl_opts):
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        return ydl.extract_info(query, download=False)
 
 #keep_alive()
 
@@ -116,168 +107,6 @@ async def sendtorules_error(ctx):
     await safe_send(ctx, "Error! Make sure you have the right role to use this command")
 
 
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-#music bot commands
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-@bot.command()
-async def play(ctx, *, song_query: str):
-    now = time.time()
-    if ctx.guild.id in last_search and now - last_search[ctx.guild.id] < 5:
-        await safe_send(ctx, f"GET RATE LIMITED LMAO")
-        return
-    last_search[ctx.guild.id] = now
-
-    # join a vc
-    if ctx.author.voice is None:
-        await safe_send(ctx, "You must be in a voice channel!")
-        return
-
-    voice_channel = ctx.author.voice.channel
-    voice_client = ctx.voice_client
-
-    if voice_client is None:
-        voice_client = await voice_channel.connect()
-    elif voice_channel != voice_client.channel:
-        await voice_client.move_to(voice_channel)
-
-    await safe_send(ctx, f"Searching for *{song_query}*\nThis may take a few seconds...")
-
-
-    ydl_options = {
-        "format": "bestaudio[abr<=96]/bestaudio",
-        "noplaylist": True,
-        "quiet": True,
-        "cookiefile": "cookies.txt",
-        "youtube_include_dash_manifest": False,
-        "youtube_include_hls_manifest": False,
-        "https_headers": {
-            "User_Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        }
-    }
-
-    #search for the audio
-    query = "ytsearch1: " + song_query
-    results = await search_ytdlp_async(query, ydl_options)
-    tracks = results.get("entries", [])
-
-    if not tracks:
-        await safe_send(ctx, "No results found")
-        return
-
-    first_track = tracks[0]
-    audio_url = first_track["url"]
-    title = first_track.get("title", "Untitled")
-
-    queue = music_queues.setdefault(ctx.guild.id, [])
-    was_empty = len(queue) == 0
-    queue.append((audio_url, title))
-
-    if was_empty:
-        play_next(ctx)
-    else:
-        await safe_send(ctx, f"Queued: **{title}**")
-
-    if not voice_client.is_playing() and not voice_client.is_paused():
-        await safe_send(ctx, f"Now playing **{title}**")
-        play_next(ctx)
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-#play next
-def play_next(ctx):
-    if ctx.guild.id in playing_lock:
-        return
-
-    playing_lock.add(ctx.guild.id)
-
-    queue = music_queues.get(ctx.guild.id)
-
-    if not queue or len(queue) == 0:
-        current_song[ctx.guild.id] = None
-        playing_lock.discard(ctx.guild.id)
-        return
-
-    voice_client = ctx.voice_client
-    audio_url, title = queue.pop(0)
-
-    current_song[ctx.guild.id] = title
-
-    ffmpeg_options = {
-        "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-        "options": "-vn -c:a libopus -b:a 96k"
-    }
-
-    source = discord.FFmpegOpusAudio(
-        audio_url,
-        **ffmpeg_options,
-        executable="bin\\ffmpeg\\ffmpeg.exe"
-    )
-
-    coro = safe_send(ctx, f"Now Playing **{title}**")  # <-- changed
-    asyncio.run_coroutine_threadsafe(coro, bot.loop)
-
-    voice_client.play(
-        source,
-        after=lambda e: bot.loop.call_soon_threadsafe(play_next, ctx)
-    )
-
-    playing_lock.discard(ctx.guild.id)
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-@bot.command()
-async def pause(ctx):
-    if ctx.voice_client and ctx.voice_client.is_playing():
-        ctx.voice_client.pause()
-        await safe_send(ctx, "Paused")
-
-
-@bot.command()
-async def resume(ctx):
-    if ctx.voice_client and ctx.voice_client.is_paused():
-        ctx.voice_client.resume()
-        await safe_send(ctx, "Resumed")
-
-
-@bot.command()
-async def skip(ctx):
-    if ctx.voice_client and ctx.voice_client.is_playing():
-        ctx.voice_client.stop()
-        await safe_send(ctx, "Skipped")
-
-
-@bot.command()
-async def stop(ctx):
-    if ctx.guild.id in music_queues:
-        music_queues[ctx.guild.id].clear()
-
-    if ctx.voice_client:
-        await ctx.voice_client.disconnect()
-
-    await safe_send(ctx, "Stopped and emptied the queue")
-
-
-@bot.command()
-async def queue(ctx):
-    queue_list = music_queues.get(ctx.guild.id, [])
-    now_playing = current_song.get(ctx.guild.id)
-    voice_client = ctx.voice_client
-
-    message = "**Current Queue:**\n"
-
-    #add currently playing song
-    if now_playing:
-        message += f"Now Playing: {now_playing}\n"
-
-    if not queue_list:
-        message += "Queue is empty"
-    else:
-        for i, (_, title) in enumerate(queue_list, start=1):
-            message += f"{i}. {title}\n"
-
-    await safe_send(ctx, message)
-
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
 #logging cmds
 #Welcome
