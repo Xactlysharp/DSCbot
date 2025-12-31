@@ -136,6 +136,8 @@ async def play(ctx, *, song_query: str):
     ydl_options = {
         "format": "bestaudio[abr<=96]/bestaudio",
         "noplaylist": True,
+        "extract_flat": False,
+        "jsruntimes": "node",
         "quiet": True,
         "cookiefile": "cookies.txt",
         "youtube_include_dash_manifest": False,
