@@ -132,19 +132,17 @@ async def play(ctx, *, song_query: str):
 
     await ctx.send(f"Searching for *{song_query}*\nThis may take a few seconds...")
 
-
     ydl_options = {
         "format": "bestaudio/best",
         "noplaylist": True,
-        "extract_flat": False,
-        "jsruntimes": "node",
         "quiet": True,
-        "cookiefile": "cookies.txt",
-        "youtube_include_dash_manifest": False,
-        "youtube_include_hls_manifest": False,
+        "no_warnings": True,
+        "jsruntimes": "node",
+        "youtube_include_dash_manifest": True,
+        "youtube_include_hls_manifest": True,
         "https_headers": {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        }
+        },
     }
 
     #search for the audio
