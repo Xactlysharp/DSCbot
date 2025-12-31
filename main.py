@@ -199,7 +199,7 @@ def play_next(ctx):
     source = discord.FFmpegOpusAudio(
         audio_url,
         **ffmpeg_options,
-        executable="bin\\ffmpeg\\ffmpeg.exe"
+        executable="ffmpeg"
     )
 
     coro = ctx.send(f"Now Playing **{title}**")  # <-- changed
