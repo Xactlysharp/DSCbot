@@ -51,12 +51,12 @@ last_message = {}
 
 
 # --- safe_send helper ---
-async def safe_send(channel, content):  # <-- changed
+async def safe_send(channel, **kwargs):  # <-- changed
     now = time.time()
     if channel.guild.id in last_message and now - last_message[channel.guild.id] < 1:  # 1 second cooldown
         return
     last_message[channel.guild.id] = now
-    await channel.send(content)
+    await channel.send(**kwargs)
 
 
 #commands start
@@ -74,8 +74,8 @@ async def on_ready():
     bot.add_view(menu2())
     channel = bot.get_channel(VerifyChannel)
     view = Menu()
-    async for msg in channel.history(limit=1):
-        await msg.delete()
+    #async for msg in channel.history(limit=1):
+        #await msg.delete()
     embed = discord.Embed(title="Verification",description="Click the button below to open a ticket\n\nYou will get verified shortly after you open a ticket")
     await safe_send(channel, embed=embed, view=view)
 
@@ -98,8 +98,8 @@ async def ping(ctx):
 async def embed(ctx, *, text):
     embed = discord.Embed(title="Title", description=text)
     embed_message = await ctx.send(embed=embed)
-    await embed_message.add_reaction("😘")
-    await embed_message.add_reaction("👺")
+    await embed_message.add_reaction("👍")
+    await embed_message.add_reaction("👎")
 @embed.error
 async def embed_error(ctx):
     await safe_send(ctx, "Error! Make sure you have the right role to use this command")
@@ -289,8 +289,8 @@ async def on_member_join(member):
     Logchannel = bot.get_channel(LogsChannel)
     Joinchannel = bot.get_channel(WelcomeChannel)
     embed = discord.Embed(title="User Joined", description=f"{member.name} has joined the server\n{member.id}", color=discord.Color.green())
-    await safe_send(Logchannel, embed=embed)
-    welcome_message = await safe_send(Joinchannel, f"Welcome {member.mention} to {member.guild.name}!")
+    await Logchannel.send(embed=embed)
+    welcome_message = await Joinchannel.send(f"Welcome {member.mention} to {member.guild.name}!")
     await welcome_message.add_reaction("👋")
 
 #Log user leave
@@ -299,14 +299,14 @@ async def on_member_join(member):
 async def on_member_remove(member):
     channel = bot.get_channel(LogsChannel)
     embed = discord.Embed(title="User Left", description=f"{member.name} has left the server\n{member.id}", color=discord.Color.red())
-    await safe_send(channel, embed=embed)
+    await channel.send(embed=embed)
 
 #message deleted logs
 @bot.event
 async def on_message_delete(message):
     logchannel = bot.get_channel(LogsChannel)
     embed = discord.Embed(title="Message deleted", description=f"```{message.content}```\nWas sent by {message.author}", color=discord.Color.red())
-    await safe_send(logchannel, embed=embed)
+    await logchannel.send(embed=embed)
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 class menu2(discord.ui.View):
