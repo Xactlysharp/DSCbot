@@ -1,6 +1,5 @@
 #imports
 import time
-
 import discord
 from discord.ext import commands
 import logging
@@ -50,15 +49,6 @@ playing_lock = set()
 last_message = {}
 
 
-# --- safe_send helper ---
-async def safe_send(channel, **kwargs):  # <-- changed
-    now = time.time()
-    if channel.guild.id in last_message and now - last_message[channel.guild.id] < 1:  # 1 second cooldown
-        return
-    last_message[channel.guild.id] = now
-    await channel.send(**kwargs)
-
-
 #commands start
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 #define an event on bot ready
@@ -77,7 +67,7 @@ async def on_ready():
     #async for msg in channel.history(limit=1):
         #await msg.delete()
     embed = discord.Embed(title="Verification",description="Click the button below to open a ticket\n\nYou will get verified shortly after you open a ticket")
-    await safe_send(channel, embed=embed, view=view)
+    await channel.send(embed=embed, view=view)
 
 
 #testing commands
@@ -85,12 +75,12 @@ async def on_ready():
 # <hello
 @bot.command()
 async def hello(ctx):
-    await safe_send(ctx,f"Hello {ctx.author.mention}")
+    await ctx.send(f"Hello {ctx.author.mention}")
 
 # <ping
 @bot.command()
 async def ping(ctx):
-    await safe_send(ctx, "Pong!")
+    await ctx.send("Pong!")
 
 #embeds
 @bot.command()
@@ -102,7 +92,7 @@ async def embed(ctx, *, text):
     await embed_message.add_reaction("👎")
 @embed.error
 async def embed_error(ctx):
-    await safe_send(ctx, "Error! Make sure you have the right role to use this command")
+    await ctx.send("Error! Make sure you have the right role to use this command")
 
 #Rules
 @bot.command()
@@ -113,7 +103,7 @@ async def sendtorules(ctx, *, text):
     embed_message = await channel.send(ctx, embed=embed)
 @sendtorules.error
 async def sendtorules_error(ctx):
-    await safe_send(ctx, "Error! Make sure you have the right role to use this command")
+    await ctx.send("Error! Make sure you have the right role to use this command")
 
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
@@ -123,13 +113,13 @@ async def sendtorules_error(ctx):
 async def play(ctx, *, song_query: str):
     now = time.time()
     if ctx.guild.id in last_search and now - last_search[ctx.guild.id] < 5:
-        await safe_send(ctx, f"GET RATE LIMITED LMAO")
+        await ctx.send(f"GET RATE LIMITED LMAO")
         return
     last_search[ctx.guild.id] = now
 
     # join a vc
     if ctx.author.voice is None:
-        await safe_send(ctx, "You must be in a voice channel!")
+        await ctx.send("You must be in a voice channel!")
         return
 
     voice_channel = ctx.author.voice.channel
@@ -140,7 +130,7 @@ async def play(ctx, *, song_query: str):
     elif voice_channel != voice_client.channel:
         await voice_client.move_to(voice_channel)
 
-    await safe_send(ctx, f"Searching for *{song_query}*\nThis may take a few seconds...")
+    await ctx.send(f"Searching for *{song_query}*\nThis may take a few seconds...")
 
 
     ydl_options = {
@@ -161,7 +151,7 @@ async def play(ctx, *, song_query: str):
     tracks = results.get("entries", [])
 
     if not tracks:
-        await safe_send(ctx, "No results found")
+        await ctx.send("No results found")
         return
 
     first_track = tracks[0]
@@ -175,10 +165,10 @@ async def play(ctx, *, song_query: str):
     if was_empty:
         play_next(ctx)
     else:
-        await safe_send(ctx, f"Queued: **{title}**")
+        await ctx.send(f"Queued: **{title}**")
 
     if not voice_client.is_playing() and not voice_client.is_paused():
-        await safe_send(ctx, f"Now playing **{title}**")
+        await ctx.send(f"Now playing **{title}**")
         play_next(ctx)
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
@@ -212,7 +202,7 @@ def play_next(ctx):
         executable="bin\\ffmpeg\\ffmpeg.exe"
     )
 
-    coro = safe_send(ctx, f"Now Playing **{title}**")  # <-- changed
+    coro = ctx.send(f"Now Playing **{title}**")  # <-- changed
     asyncio.run_coroutine_threadsafe(coro, bot.loop)
 
     voice_client.play(
@@ -227,21 +217,21 @@ def play_next(ctx):
 async def pause(ctx):
     if ctx.voice_client and ctx.voice_client.is_playing():
         ctx.voice_client.pause()
-        await safe_send(ctx, "Paused")
+        await ctx.send("Paused")
 
 
 @bot.command()
 async def resume(ctx):
     if ctx.voice_client and ctx.voice_client.is_paused():
         ctx.voice_client.resume()
-        await safe_send(ctx, "Resumed")
+        await ctx.send("Resumed")
 
 
 @bot.command()
 async def skip(ctx):
     if ctx.voice_client and ctx.voice_client.is_playing():
         ctx.voice_client.stop()
-        await safe_send(ctx, "Skipped")
+        await ctx.send("Skipped")
 
 
 @bot.command()
@@ -252,7 +242,7 @@ async def stop(ctx):
     if ctx.voice_client:
         await ctx.voice_client.disconnect()
 
-    await safe_send(ctx, "Stopped and emptied the queue")
+    await ctx.send("Stopped and emptied the queue")
 
 
 @bot.command()
@@ -273,7 +263,7 @@ async def queue(ctx):
         for i, (_, title) in enumerate(queue_list, start=1):
             message += f"{i}. {title}\n"
 
-    await safe_send(ctx, message)
+    await ctx.send(message)
 
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
